@@ -1,10 +1,16 @@
 class ListingsController < ApplicationController
   before_action :set_listing, only: [:show, :edit, :update, :destroy]
-
+  before_action :authenticate_user!, only: [:seller, :new, :create, :edit, :update, :destroy]
+  before_action :check_user, only: [:edit, :update, :destroy]
   # GET /listings
   # GET /listings.json
+
+  def seller
+    @listings = Listing.where(user: current_user).order("created_at DESC")
+  end
+
   def index
-    @listings = Listing.all
+    @listings = Listing.all.order("created_at DESC")
   end
 
   # GET /listings/1
@@ -25,6 +31,7 @@ class ListingsController < ApplicationController
   # POST /listings.json
   def create
     @listing = Listing.new(listing_params)
+    @listing.user_id = current_user.id
 
     respond_to do |format|
       if @listing.save
@@ -70,5 +77,11 @@ class ListingsController < ApplicationController
     # Never trust parameters from the scary internet, only allow the white list through.
     def listing_params
       params.require(:listing).permit(:name, :description, :price, :image)
+    end
+
+    def check_user
+      if current_user != @listing.user
+        redirect_to root_url, alert: "Sorry, this listing belongs to someone else"
+      end
     end
 end
